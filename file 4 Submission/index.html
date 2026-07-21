@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RevenueCycle Intelligence Studio</title>
+<meta name="description" content="Browser-based revenue cycle analytics for leakage, denials, KPIs, dashboards, and reports.">
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#ffffff;--panel2:#eef3f9;--text:#172033;--muted:#64748b;
+  --line:#dbe3ee;--brand:#0f5bd7;--brand2:#0b3f95;--good:#168a55;--warn:#b7791f;
+  --bad:#c63b3b;--info:#3267b2;--shadow:0 12px 30px rgba(15,40,80,.09);
+  --radius:16px;--sidebar:260px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,#0d2f62,#0a2249);color:#fff;padding:22px 16px;display:flex;flex-direction:column;gap:18px;z-index:20}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 18px;border-bottom:1px solid rgba(255,255,255,.14)}
+.brand-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#4ba3ff,#88c6ff);display:grid;place-items:center;color:#082044;font-weight:900}
+.brand h1{font-size:16px;margin:0}.brand p{font-size:11px;margin:3px 0 0;color:#c9d7ec}
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav button{border:0;background:transparent;color:#dce8f7;text-align:left;padding:11px 12px;border-radius:10px;display:flex;align-items:center;gap:10px}
+.nav button:hover,.nav button.active{background:rgba(255,255,255,.12);color:#fff}
+.nav .badge{margin-left:auto;font-size:10px;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:999px}
+.side-footer{margin-top:auto;font-size:11px;color:#b8c8df;line-height:1.5;padding:10px}
+.main{min-width:0}
+.topbar{position:sticky;top:0;z-index:15;height:72px;background:rgba(244,247,251,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px}
+.topbar-left{display:flex;align-items:center;gap:12px}.menu{display:none}
+.page-title{font-weight:800}.dataset-status{font-size:12px;color:var(--muted);margin-top:3px}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:9px 13px;border-radius:10px;font-weight:700}
+.btn:hover{border-color:#adc2de}
+.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn.danger{color:var(--bad)}
+.content{padding:24px;max-width:1600px;margin:0 auto}
+.view{display:none}.view.active{display:block}
+.hero{background:linear-gradient(135deg,#0f5bd7,#123b78);color:white;border-radius:22px;padding:28px;box-shadow:var(--shadow);display:grid;grid-template-columns:1.4fr .8fr;gap:22px;align-items:center}
+.hero h2{font-size:30px;margin:0 0 8px}.hero p{margin:0;color:#dbeaff;line-height:1.6;max-width:800px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.hero .btn{border-color:rgba(255,255,255,.35)}.hero .btn.primary{background:#fff;color:#0f5bd7}
+.hero-stat{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hero-stat div{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.16);padding:16px;border-radius:14px}.hero-stat strong{font-size:24px;display:block}.hero-stat span{font-size:12px;color:#dbeaff}
+.grid{display:grid;gap:16px}.grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.section{margin-top:20px}.section-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:12px}.section-head h3{margin:0;font-size:20px}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;min-width:0}
+.metric{position:relative;overflow:hidden}.metric small{color:var(--muted);font-weight:700}.metric .value{font-size:28px;font-weight:850;margin:8px 0 5px}.metric .delta{font-size:12px;color:var(--muted)}.metric .accent{position:absolute;right:-10px;top:-10px;width:70px;height:70px;border-radius:50%;background:rgba(15,91,215,.09)}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}.good{background:#e8f7ef;color:var(--good)}.warn{background:#fff5df;color:var(--warn)}.bad{background:#fdeaea;color:var(--bad)}.neutral{background:#edf2f7;color:#64748b}
+.chart-wrap{position:relative;height:330px}.chart-wrap.sm{height:260px}.chart-wrap canvas{width:100%;height:100%;display:block}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select{border:1px solid var(--line);background:#fff;padding:9px 10px;border-radius:10px;min-width:150px}
+.filterbar{display:flex;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:14px;margin-bottom:16px}
+.filterbar label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.filterbar select,.filterbar input{border:1px solid var(--line);border-radius:9px;padding:8px;background:#fff}
+.dropzone{border:2px dashed #a9bdd9;border-radius:16px;padding:28px;text-align:center;background:#f9fbfe;transition:.2s}.dropzone.drag{border-color:var(--brand);background:#eef5ff}.dropzone h4{margin:0 0 8px}.dropzone p{margin:0 0 15px;color:var(--muted)}
+.notice{padding:12px 14px;border-radius:12px;background:#fff8e7;color:#7d5b1e;border:1px solid #f2d88d;font-size:13px;line-height:1.45}
+.alert{padding:12px 14px;border-radius:12px;font-size:13px;margin-top:12px}.alert.error{background:#fdeaea;color:#8f2222;border:1px solid #f2b3b3}.alert.success{background:#eaf8f0;color:#166b45;border:1px solid #b7e6ca}.hidden{display:none!important}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+table{width:100%;border-collapse:collapse;min-width:800px}th,td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap}th{background:#f6f9fd;color:#4a5b72;position:sticky;top:0;z-index:2}tbody tr:hover{background:#f8fbff}
+.kpi-row{display:grid;grid-template-columns:1.4fr .8fr .8fr .8fr .8fr;gap:10px;align-items:center;padding:12px;border-bottom:1px solid var(--line)}.kpi-row:last-child{border-bottom:0}.kpi-row.header{font-size:12px;color:var(--muted);font-weight:800;background:#f6f9fd;border-radius:10px 10px 0 0}
+.progress{height:8px;background:#e8edf4;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:var(--brand)}
+.insight{border-left:4px solid var(--brand);padding:12px 14px;background:#f7faff;border-radius:0 12px 12px 0;margin-bottom:10px}.insight strong{display:block;margin-bottom:4px}.insight p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.empty{display:grid;place-items:center;min-height:180px;text-align:center;color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(10,20,40,.55);display:grid;place-items:center;z-index:99;padding:20px}.modal-card{width:min(720px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.25)}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0}.close{border:0;background:transparent;font-size:24px}
+.toast{position:fixed;right:20px;bottom:20px;background:#11223e;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);z-index:120;opacity:0;transform:translateY(15px);pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:none}
+
+.input-source-shell{margin-top:20px}.source-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.source-tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text);transition:.18s}.source-tab:hover{transform:translateY(-1px);border-color:#9fb9dc}.source-tab.active{background:#eef5ff;border-color:var(--brand);color:var(--brand);box-shadow:0 8px 20px rgba(15,91,215,.12)}.source-icon{width:34px;height:34px;border-radius:10px;background:var(--panel2);display:grid;place-items:center}.source-tab.active .source-icon{background:#dceaff}.source-panel{display:none}.source-panel.active{display:block}.connector-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:18px}.connector-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:6px}.field span{font-size:12px;color:var(--muted);font-weight:700}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}.field input:focus,.field select:focus,.field textarea:focus{outline:3px solid rgba(15,91,215,.12);border-color:var(--brand)}.connector-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.connection-status{display:flex;align-items:center;gap:8px;margin-top:14px;padding:11px 12px;border-radius:10px;background:#f6f9fd;color:var(--muted);font-size:13px}.status-dot{width:9px;height:9px;border-radius:50%;background:#94a3b8}.connection-status.success{background:#eaf8f0;color:#166b45}.connection-status.success .status-dot{background:var(--good)}.connection-status.error{background:#fdeaea;color:#8f2222}.connection-status.error .status-dot{background:var(--bad)}.optional-chip{display:inline-flex;padding:3px 8px;border-radius:999px;background:#edf2f7;color:#64748b;font-size:11px;font-weight:800;margin-left:6px}.source-help{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 15px}.sample-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.sample-option{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}.sample-option strong{display:block;margin-bottom:6px}.sample-option p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.45}
+@media(max-width:820px){.source-tabs{grid-template-columns:repeat(2,1fr)}.connector-grid,.sample-options{grid-template-columns:1fr}}
+
+@media(max-width:1100px){.grid.cols-4{grid-template-columns:repeat(2,1fr)}.grid.cols-3{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.kpi-row{grid-template-columns:1.2fr .7fr .7fr .7fr}.kpi-row>*:nth-child(5){display:none}}
+@media(max-width:820px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:-280px;width:260px;transition:.25s}.sidebar.open{left:0}.menu{display:inline-flex}.topbar{padding:0 14px}.content{padding:14px}.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr}.hero h2{font-size:24px}.top-actions .desktop-only{display:none}.kpi-row{grid-template-columns:1fr .7fr .7fr}.kpi-row>*:nth-child(4),.kpi-row>*:nth-child(5){display:none}}
+@media print{.sidebar,.topbar,.filterbar,.no-print{display:none!important}.app{display:block}.content{padding:0}.card,.hero{box-shadow:none;break-inside:avoid}.view{display:none!important}.view.active{display:block!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">RC</div>
+      <div><h1>RevenueCycle Studio</h1><p>Local analytics workspace</p></div>
+    </div>
+    <nav class="nav" aria-label="Primary navigation">
+      <button class="active" data-view="home">⌂ Home</button>
+      <button data-view="data">▣ Data Workspace <span class="badge" id="rowBadge">0</span></button>
+      <button data-view="leakage">↘ Revenue Leakage</button>
+      <button data-view="denials">⚠ Denial Intelligence</button>
+      <button data-view="kpi">◉ KPI Center</button>
+      <button data-view="dashboard">▤ Executive Dashboard</button>
+      <button data-view="reports">⇩ Reports</button>
+      <button data-view="settings">⚙ Settings</button>
+    </nav>
+    <div class="side-footer">
+      Client-side only. Data stays in this browser.<br>
+      Use synthetic or approved de-identified data.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn menu" id="menuBtn" aria-label="Open navigation">☰</button>
+        <div>
+          <div class="page-title" id="pageTitle">Home</div>
+          <div class="dataset-status" id="datasetStatus">No dataset loaded</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn desktop-only" id="sampleTopBtn">Load Sample</button>
+        <button class="btn primary" id="uploadTopBtn">Upload CSV</button>
+        <input id="fileInputTop" type="file" accept=".csv,text/csv" hidden>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="view active" id="view-home">
+        <div class="hero">
+          <div>
+            <h2>Revenue cycle intelligence without a backend</h2>
+            <p>Load operational data, validate quality, quantify leakage, identify denial root causes, monitor KPIs, and export executive-ready results. All calculations run locally in your browser.</p>
+            <div class="hero-actions">
+              <button class="btn primary" id="heroSampleBtn">Load Synthetic Sample</button>
+              <button class="btn" id="heroUploadBtn">Upload CSV</button>
+              <button class="btn" data-go="data">Open Data Workspace</button>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <div><strong id="heroRows">0</strong><span>Records loaded</span></div>
+            <div><strong id="heroQuality">—</strong><span>Data quality score</span></div>
+            <div><strong id="heroLeakage">$0</strong><span>Total leakage</span></div>
+            <div><strong id="heroDenials">0%</strong><span>Denial rate</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div><h3>Operational overview</h3><p>Current dataset performance</p></div></div>
+          <div class="grid cols-4">
+            <div class="card metric"><span class="accent"></span><small>Total billed</small><div class="value" id="homeBilled">$0</div><div class="delta">Across active records</div></div>
+            <div class="card metric"><span class="accent"></span><small>Total paid</small><div class="value" id="homePaid">$0</div><div class="delta">Payments received</div></div>
+            <div class="card metric"><span class="accent"></span><small>Net collection rate</small><div class="value" id="homeNCR">—</div><div class="delta">Paid relative to allowed</div></div>
+            <div class="card metric"><span class="accent"></span><small>Recovery opportunity</small><div class="value" id="homeOpportunity">$0</div><div class="delta">Unrecovered leakage</div></div>
+          </div>
+        </div>
+
+        <div class="section grid cols-2">
+          <div class="card">
+            <div class="section-head"><div><h3>Monthly financial trend</h3><p>Billed, paid, and leakage</p></div></div>
+            <div class="chart-wrap"><canvas id="homeTrendChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="section-head"><div><h3>Priority findings</h3><p>Rule-based descriptive insights</p></div></div>
+            <div id="homeInsights" class="empty">Load a dataset to generate findings.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-data">
+        <div class="section-head">
+          <div><h3>Data Workspace</h3><p>Load, validate, preview, and prepare your dataset.</p></div>
+          <div class="toolbar no-print">
+            <button class="btn" id="downloadTemplateBtn">Download Template</button>
+            <button class="btn danger" id="clearDataBtn">Clear Data</button>
+          </div>
+        </div>
+        <div class="notice">Do not upload protected health information or personally identifiable information. Use synthetic, de-identified, or organization-approved data.</div>
+        <div class="grid cols-2 section">
+          <div class="card">
+            <div class="dropzone" id="dropzone">
+              <h4>Drop a CSV file here</h4>
+              <p>or select a file from your device</p>
+              <button class="btn primary" id="selectFileBtn">Choose CSV</button>
+              <input id="fileInput" type="file" accept=".csv,text/csv" hidden>
+            </div>
+            <div class="toolbar" style="margin-top:12px">
+              <button class="btn" id="load500Btn">Load 500 Sample Rows</button>
+              <button class="btn" id="load1000Btn">Load 1,000 Sample Rows</button>
+              <button class="btn" id="pasteDataBtn">Paste Table</button>
+            </div>
+            <div id="dataMessage" class="alert hidden"></div>
+          </div>
+          <div class="card">
+            <div class="section-head"><div><h3>Dataset profile</h3><p>Current file and validation status</p></div></div>
+            <div class="grid cols-2">
+              <div class="metric"><small>Rows</small><div class="value" id="profileRows">0</div></div>
+              <div class="metric"><small>Columns</small><div class="value" id="profileCols">0</div></div>
+              <div class="metric"><small>Quality score</small><div class="value" id="profileQuality">—</div></div>
+              <div class="metric"><small>Critical issues</small><div class="value" id="profileCritical">0</div></div>
+            </div>
+            <div id="validationList" style="margin-top:10px"></div>
+          </div>
+        </div>
+        
+
+<div class="card input-source-shell">
+  <div class="section-head">
+    <div><h3>Input Sources</h3><p>Choose one source. API and MCP portals are optional and do not affect local use.</p></div>
+    <span class="status-pill neutral" id="activeSourceBadge">Local File</span>
+  </div>
+  <div class="source-tabs" role="tablist" aria-label="Input sources">
+    <button class="source-tab active" type="button" data-source-tab="local"><span class="source-icon">▣</span><span>Local File</span></button>
+    <button class="source-tab" type="button" data-source-tab="sample"><span class="source-icon">◇</span><span>Synthetic Sample</span></button>
+    <button class="source-tab" type="button" data-source-tab="api"><span class="source-icon">↔</span><span>API Portal <span class="optional-chip">Optional</span></span></button>
+    <button class="source-tab" type="button" data-source-tab="mcp"><span class="source-icon">⌘</span><span>MCP Portal <span class="optional-chip">Optional</span></span></button>
+  </div>
+
+  <div class="source-panel active" data-source-panel="local">
+    <p class="source-help">Use the upload area above for a CSV file, drag-and-drop, or paste tabular data. No connection is required.</p>
+    <div class="connection-status success"><span class="status-dot"></span>Local browser input is ready.</div>
+  </div>
+
+  <div class="source-panel" data-source-panel="sample">
+    <p class="source-help">Load a fully synthetic dataset containing no patient names, identifiers, or sensitive information.</p>
+    <div class="sample-options">
+      <div class="sample-option"><strong>Quick Demo</strong><p>500 records for rapid exploration and presentations.</p><button class="btn primary" type="button" id="sourceSample500">Load 500 Records</button></div>
+      <div class="sample-option"><strong>Operational Demo</strong><p>1,000 records for fuller dashboards and filtering.</p><button class="btn primary" type="button" id="sourceSample1000">Load 1,000 Records</button></div>
+      <div class="sample-option"><strong>Performance Demo</strong><p>5,000 records for browser performance testing.</p><button class="btn" type="button" id="sourceSample5000">Load 5,000 Records</button></div>
+    </div>
+  </div>
+
+  <div class="source-panel" data-source-panel="api">
+    <div class="connector-card">
+      <p class="source-help">Configure a future REST or FHIR-compatible data service. This standalone edition validates and stores configuration locally but does not transmit credentials or data.</p>
+      <div class="connector-grid">
+        <label class="field"><span>API Base URL</span><input id="apiBaseUrl" type="url" placeholder="https://api.example.org/v1"></label>
+        <label class="field"><span>Authentication Method</span><select id="apiAuthMethod"><option value="none">None</option><option value="bearer">Bearer token</option><option value="api-key">API key</option></select></label>
+        <label class="field"><span>Resource Path</span><input id="apiResourcePath" type="text" placeholder="/revenue-cycle/claims"></label>
+        <label class="field"><span>Credential</span><input id="apiCredential" type="password" autocomplete="off" placeholder="Not saved unless requested"></label>
+      </div>
+      <div class="connector-actions"><button class="btn primary" type="button" id="testApiBtn">Validate Configuration</button><button class="btn" type="button" id="saveApiBtn">Save Locally</button><button class="btn danger" type="button" id="resetApiBtn">Reset</button></div>
+      <div class="connection-status" id="apiStatus"><span class="status-dot"></span>Not configured.</div>
+    </div>
+  </div>
+
+  <div class="source-panel" data-source-panel="mcp">
+    <div class="connector-card">
+      <p class="source-help">Configure a future Model Context Protocol gateway for approved enterprise tools and resources. The current app records configuration only; no MCP session is opened.</p>
+      <div class="connector-grid">
+        <label class="field"><span>MCP Server URL</span><input id="mcpEndpoint" type="text" placeholder="https://mcp.example.org or local gateway"></label>
+        <label class="field"><span>Transport</span><select id="mcpTransport"><option value="streamable-http">Streamable HTTP</option><option value="sse">Server-Sent Events</option><option value="local">Local gateway</option></select></label>
+        <label class="field"><span>Workspace</span><input id="mcpWorkspace" type="text" placeholder="Revenue Cycle Analytics"></label>
+        <label class="field"><span>Access Token</span><input id="mcpToken" type="password" autocomplete="off" placeholder="Optional"></label>
+      </div>
+      <div class="connector-actions"><button class="btn primary" type="button" id="testMcpBtn">Validate Configuration</button><button class="btn" type="button" id="saveMcpBtn">Save Locally</button><button class="btn danger" type="button" id="resetMcpBtn">Reset</button></div>
+      <div class="connection-status" id="mcpStatus"><span class="status-dot"></span>Not configured.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card section">
+          <div class="section-head">
+            <div><h3>Data preview</h3><p id="previewInfo">No data loaded</p></div>
+            <div class="toolbar"><input id="previewSearch" type="search" placeholder="Search records"></div>
+          </div>
+          <div class="table-wrap"><table id="previewTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-leakage">
+        <div class="section-head"><div><h3>Revenue Leakage</h3><p>Quantify preventable and recoverable revenue loss.</p></div><button class="btn" id="exportLeakageBtn">Export Leakage CSV</button></div>
+        <div id="leakageFilters" class="filterbar"></div>
+        <div class="grid cols-4">
+          <div class="card metric"><small>Total leakage</small><div class="value" id="leakTotal">$0</div><div class="delta" id="leakRate">0% of billed</div></div>
+          <div class="card metric"><small>Denied amount</small><div class="value" id="leakDenied">$0</div><div class="delta">Potentially appealable</div></div>
+          <div class="card metric"><small>Underpayments</small><div class="value" id="leakUnder">$0</div><div class="delta">Contract variance</div></div>
+          <div class="card metric"><small>Missed charges</small><div class="value" id="leakMissed">$0</div><div class="delta">Charge capture opportunity</div></div>
+        </div>
+        <div class="section grid cols-2">
+          <div class="card"><div class="section-head"><div><h3>Monthly leakage trend</h3><p>Stacked by leakage source</p></div></div><div class="chart-wrap"><canvas id="leakTrendChart"></canvas></div></div>
+          <div class="card"><div class="section-head"><div><h3>Leakage by payer</h3><p>Highest financial exposure</p></div></div><div class="chart-wrap"><canvas id="leakPayerChart"></canvas></div></div>
+        </div>
+        <div class="card section">
+          <div class="section-head"><div><h3>Leakage detail</h3><p>Filtered records with financial loss</p></div></div>
+          <div class="table-wrap"><table id="leakTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-denials">
+        <div class="section-head"><div><h3>Denial Intelligence</h3><p>Identify high-impact root causes and recovery opportunities.</p></div><button class="btn" id="exportDenialsBtn">Export Denials CSV</button></div>
+        <div id="denialFilters" class="filterbar"></div>
+        <div class="grid cols-4">
+          <div class="card metric"><small>Denied claims</small><div class="value" id="denCount">0</div><div class="delta" id="denRate">0% denial rate</div></div>
+          <div class="card metric"><small>Denied amount</small><div class="value" id="denAmount">$0</div><div class="delta">Gross denial exposure</div></div>
+          <div class="card metric"><small>Recovered amount</small><div class="value" id="denRecovered">$0</div><div class="delta">Successful recovery</div></div>
+          <div class="card metric"><small>Appeal success</small><div class="value" id="denAppeal">—</div><div class="delta">Successful appeals</div></div>
+        </div>
+        <div class="section grid cols-2">
+          <div class="card"><div class="section-head"><div><h3>Denial Pareto</h3><p>Count and cumulative contribution</p></div></div><div class="chart-wrap"><canvas id="paretoChart"></canvas></div></div>
+          <div class="card"><div class="section-head"><div><h3>Denial trend</h3><p>Monthly denied amount</p></div></div><div class="chart-wrap"><canvas id="denTrendChart"></canvas></div></div>
+        </div>
+        <div class="card section">
+          <div class="section-head"><div><h3>Denial detail</h3><p>Filtered denied records</p></div></div>
+          <div class="table-wrap"><table id="denialTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-kpi">
+        <div class="section-head"><div><h3>KPI Center</h3><p>Transparent formulas, configurable targets, and status scoring.</p></div><button class="btn" id="editThresholdsBtn">Edit Thresholds</button></div>
+        <div class="card">
+          <div class="kpi-row header"><div>KPI</div><div>Current</div><div>Target</div><div>Status</div><div>Variance</div></div>
+          <div id="kpiRows"></div>
+        </div>
+        <div class="section grid cols-2">
+          <div class="card"><div class="section-head"><div><h3>Status distribution</h3><p>Current KPI health</p></div></div><div class="chart-wrap sm"><canvas id="kpiStatusChart"></canvas></div></div>
+          <div class="card"><div class="section-head"><div><h3>KPI definitions</h3><p>Calculation transparency</p></div></div><div id="kpiDefinitions"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-dashboard">
+        <div class="section-head"><div><h3>Executive Dashboard</h3><p>One-screen summary of financial performance, risk, and opportunity.</p></div><div class="toolbar"><button class="btn" id="printDashboardBtn">Print</button><button class="btn primary" id="exportDashboardBtn">Export HTML Report</button></div></div>
+        <div class="grid cols-4">
+          <div class="card metric"><small>Total billed</small><div class="value" id="dashBilled">$0</div></div>
+          <div class="card metric"><small>Total paid</small><div class="value" id="dashPaid">$0</div></div>
+          <div class="card metric"><small>Total leakage</small><div class="value" id="dashLeakage">$0</div></div>
+          <div class="card metric"><small>Recoverable opportunity</small><div class="value" id="dashOpportunity">$0</div></div>
+        </div>
+        <div class="section grid cols-2">
+          <div class="card"><div class="section-head"><div><h3>Financial overview</h3><p>Monthly billed, paid, and leakage</p></div></div><div class="chart-wrap"><canvas id="dashTrendChart"></canvas></div></div>
+          <div class="card"><div class="section-head"><div><h3>Performance health</h3><p>Core KPI status</p></div></div><div class="chart-wrap"><canvas id="dashKpiChart"></canvas></div></div>
+        </div>
+        <div class="section grid cols-2">
+          <div class="card"><div class="section-head"><div><h3>Key findings</h3><p>Calculated, traceable observations</p></div></div><div id="dashInsights" class="empty">Load data to generate findings.</div></div>
+          <div class="card"><div class="section-head"><div><h3>Top opportunities</h3><p>Largest areas for review</p></div></div><div id="opportunityList" class="empty">Load data to rank opportunities.</div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-reports">
+        <div class="section-head"><div><h3>Reports Center</h3><p>Generate focused, exportable summaries from current data.</p></div></div>
+        <div class="grid cols-3">
+          <div class="card"><h3>Executive Summary</h3><p>Financial performance, KPI health, risks, and opportunities.</p><button class="btn primary report-btn" data-report="executive">Generate Report</button></div>
+          <div class="card"><h3>Leakage Report</h3><p>Leakage categories, monthly trend, payer exposure, and details.</p><button class="btn primary report-btn" data-report="leakage">Generate Report</button></div>
+          <div class="card"><h3>Denial Report</h3><p>Root causes, Pareto ranking, recovery metrics, and details.</p><button class="btn primary report-btn" data-report="denials">Generate Report</button></div>
+        </div>
+        <div class="card section">
+          <div class="section-head"><div><h3>Generated report preview</h3><p id="reportMeta">No report generated</p></div><button class="btn" id="downloadReportBtn" disabled>Download HTML</button></div>
+          <div id="reportPreview" class="empty">Choose a report type above.</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="section-head"><div><h3>Settings</h3><p>Display, number formatting, and local-session preferences.</p></div></div>
+        <div class="grid cols-2">
+          <div class="card">
+            <label>Currency
+              <select id="currencySetting"><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select>
+            </label>
+            <br><br>
+            <label>Percentage precision
+              <select id="precisionSetting"><option value="0">0 decimals</option><option value="1" selected>1 decimal</option><option value="2">2 decimals</option></select>
+            </label>
+            <br><br>
+            <label><input type="checkbox" id="saveSessionSetting"> Save dataset in local browser storage</label>
+            <br><br>
+            <button class="btn primary" id="saveSettingsBtn">Save Settings</button>
+          </div>
+          <div class="card">
+            <h3>Local data controls</h3>
+            <p style="color:var(--muted)">Saved sessions remain only in this browser.</p>
+            <button class="btn" id="saveSessionBtn">Save Current Session</button>
+            <button class="btn" id="restoreSessionBtn">Restore Saved Session</button>
+            <button class="btn danger" id="deleteSessionBtn">Delete Saved Session</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal hidden" id="pasteModal">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Paste CSV or tabular data</h3><button class="close" data-close="pasteModal">×</button></div>
+    <p style="color:var(--muted)">Paste a header row followed by data rows. CSV and tab-separated values are supported.</p>
+    <textarea id="pasteArea" rows="14" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:12px"></textarea>
+    <div class="toolbar" style="margin-top:12px"><button class="btn primary" id="processPasteBtn">Load Data</button></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="thresholdModal">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Edit KPI thresholds</h3><button class="close" data-close="thresholdModal">×</button></div>
+    <div id="thresholdForm"></div>
+    <div class="toolbar" style="margin-top:14px"><button class="btn primary" id="saveThresholdsBtn">Save Thresholds</button><button class="btn" id="resetThresholdsBtn">Restore Defaults</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const State={
+  source:{name:"",loadedAt:"",rowCount:0},
+  rawData:[],filteredData:[],validation:{score:0,critical:[],warnings:[],info:[]},
+  filters:{payer:"All",department:"All",month:"All"},
+  settings:{currency:"USD",precision:1,saveSession:false},
+  thresholds:{ncr:95,denialRate:5,daysAR:40,cleanClaim:95,appealSuccess:65,leakageRate:3},
+  reportHTML:""
+};
+const required=["RecordID","Month","Department","Payer","ClaimStatus","BilledAmount","PaidAmount","DenialAmount","Underpayment","MissedCharge","RecoveryAmount","DaysInAR","FirstPassAccepted","POSCollected","DenialReason","AppealStatus","AllowedAmount"];
+const moneyFields=["BilledAmount","PaidAmount","DenialAmount","Underpayment","MissedCharge","RecoveryAmount","AllowedAmount","POSCollected"];
+const numericFields=[...moneyFields,"DaysInAR"];
+const pageNames={home:"Home",data:"Data Workspace",leakage:"Revenue Leakage",denials:"Denial Intelligence",kpi:"KPI Center",dashboard:"Executive Dashboard",reports:"Reports",settings:"Settings"};
+
+function fmtMoney(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:State.settings.currency,maximumFractionDigits:0}).format(Number(n)||0)}
+function fmtPct(n){return `${(Number(n)||0).toFixed(State.settings.precision)}%`}
+function sum(arr,key){return arr.reduce((a,r)=>a+(Number(r[key])||0),0)}
+function unique(arr,key){return [...new Set(arr.map(r=>r[key]).filter(Boolean))].sort()}
+function escapeHTML(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+function navigate(view){$$(".view").forEach(v=>v.classList.remove("active"));$(`#view-${view}`).classList.add("active");$$(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));$("#pageTitle").textContent=pageNames[view];$("#sidebar").classList.remove("open");if(["home","leakage","denials","kpi","dashboard"].includes(view)) renderAll()}
+$$("[data-view]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.view)));
+$$("[data-go]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.go)));
+$("#menuBtn").onclick=()=>$("#sidebar").classList.toggle("open");
+
+function parseDelimited(text){
+  const first=text.split(/\r?\n/)[0]||"";
+  const delimiter=first.includes("\t")?"\t":",";
+  const rows=[];let row=[],cell="",quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];
+    if(c=='"'){if(quoted&&n=='"'){cell+='"';i++}else quoted=!quoted}
+    else if(c===delimiter&&!quoted){row.push(cell);cell=""}
+    else if((c=="\n"||c=="\r")&&!quoted){if(c=="\r"&&n=="\n")i++;row.push(cell);if(row.some(x=>x.trim()!==""))rows.push(row);row=[];cell=""}
+    else cell+=c;
+  }
+  row.push(cell);if(row.some(x=>x.trim()!==""))rows.push(row);
+  if(rows.length<2)throw new Error("The file must contain a header and at least one data row.");
+  const headers=rows[0].map(h=>h.trim());
+  return rows.slice(1).map(cols=>{const o={};headers.forEach((h,i)=>o[h]=(cols[i]??"").trim());return o});
+}
+function normalize(data){
+  return data.map((r,i)=>{
+    const o={};required.forEach(k=>o[k]=r[k]??"");
+    Object.keys(r).forEach(k=>{if(!(k in o))o[k]=r[k]});
+    if(!o.RecordID)o.RecordID=`R-${i+1}`;
+    numericFields.forEach(k=>o[k]=Number(String(o[k]).replace(/[$,%]/g,""))||0);
+    o.FirstPassAccepted=String(o.FirstPassAccepted).toLowerCase()==="true"||o.FirstPassAccepted==="1"||String(o.FirstPassAccepted).toLowerCase()==="yes";
+    return o;
+  });
+}
+function validate(data){
+  const v={score:100,critical:[],warnings:[],info:[]};
+  if(!data.length){v.critical.push("No usable records found.");v.score=0;return v}
+  const keys=Object.keys(data[0]);
+  const missing=required.filter(k=>!keys.includes(k));
+  if(missing.length){v.critical.push(`Missing required columns: ${missing.join(", ")}`);v.score-=Math.min(50,missing.length*3)}
+  const dup=data.length-new Set(data.map(r=>r.RecordID)).size;
+  if(dup){v.warnings.push(`${dup} duplicate RecordID values detected.`);v.score-=Math.min(15,dup/data.length*100)}
+  let blanks=0,invalid=0;
+  data.forEach(r=>{required.forEach(k=>{if(r[k]===""||r[k]===null)blanks++});numericFields.forEach(k=>{if(Number.isNaN(Number(r[k])))invalid++})});
+  const blankRate=blanks/(data.length*required.length);
+  if(blankRate>.02){v.warnings.push(`${(blankRate*100).toFixed(1)}% required-field values are blank.`);v.score-=Math.min(20,blankRate*100)}
+  if(invalid){v.warnings.push(`${invalid} invalid numeric values were converted to zero.`);v.score-=10}
+  v.info.push(`${data.length.toLocaleString()} records ready for analysis.`);
+  v.score=Math.max(0,Math.round(v.score));
+  return v;
+}
+function loadData(data,name){
+  try{
+    State.rawData=normalize(data);State.source={name,loadedAt:new Date().toISOString(),rowCount:State.rawData.length};State.validation=validate(State.rawData);State.filters={payer:"All",department:"All",month:"All"};applyFilters();renderAll();renderDataWorkspace();populateFilters();if(State.settings.saveSession)saveSession();toast(`${State.rawData.length.toLocaleString()} records loaded`);
+  }catch(e){showDataMessage(e.message,"error")}
+}
+function loadFile(file){if(!file)return;if(!file.name.toLowerCase().endsWith(".csv"))return showDataMessage("Only CSV files are supported in this standalone version.","error");const reader=new FileReader();reader.onload=()=>{try{loadData(parseDelimited(reader.result),file.name)}catch(e){showDataMessage(e.message,"error")}};reader.onerror=()=>showDataMessage("The file could not be read.","error");reader.readAsText(file)}
+function showDataMessage(msg,type){const el=$("#dataMessage");el.textContent=msg;el.className=`alert ${type}`}
+function generateSample(n){
+  const months=["Jan-2026","Feb-2026","Mar-2026","Apr-2026","May-2026","Jun-2026","Jul-2026","Aug-2026","Sep-2026","Oct-2026","Nov-2026","Dec-2026"];
+  const departments=["Emergency","Inpatient","Outpatient","Radiology","Surgery","Cardiology","Oncology","Laboratory"];
+  const payers=["Medicare","Medicaid","Aetna","Anthem","Cigna","UnitedHealthcare","Humana","Commercial"];
+  const reasons=["Eligibility","Authorization","Coding","Medical Necessity","Timely Filing","Duplicate Claim","Coverage","Documentation"];
+  const records=[];
+  for(let i=0;i<n;i++){
+    const billed=Math.round(800+Math.random()*18000);
+    const allowed=Math.round(billed*(0.55+Math.random()*0.25));
+    const denied=Math.random()<0.18?Math.round(billed*(0.15+Math.random()*0.65)):0;
+    const under=Math.random()<0.20?Math.round(billed*(0.01+Math.random()*0.07)):0;
+    const missed=Math.random()<0.10?Math.round(100+Math.random()*1500):0;
+    const paid=Math.max(0,allowed-denied-under);
+    const appealed=denied>0&&Math.random()<0.60;
+    const recovered=appealed&&Math.random()<0.65?Math.round(denied*(0.30+Math.random()*0.60)):0;
+    records.push({
+      RecordID:`RCM-${String(i+1).padStart(6,"0")}`,
+      Month:months[i%12],
+      Department:departments[Math.floor(Math.random()*departments.length)],
+      Payer:payers[Math.floor(Math.random()*payers.length)],
+      ClaimStatus:denied>0?"Denied":"Paid",
+      BilledAmount:billed,
+      AllowedAmount:allowed,
+      PaidAmount:paid,
+      DenialAmount:denied,
+      Underpayment:under,
+      MissedCharge:missed,
+      RecoveryAmount:recovered,
+      DaysInAR:Math.round(10+Math.random()*95),
+      FirstPassAccepted:denied===0,
+      POSCollected:Math.round(Math.random()*400),
+      DenialReason:denied>0?reasons[Math.floor(Math.random()*reasons.length)]:"",
+      AppealStatus:denied===0?"Not Required":(appealed?(recovered>0?"Successful":"Unsuccessful"):"Not Appealed")
+    });
+  }
+  return records;
+}
+function applyFilters(){
+  State.filteredData=State.rawData.filter(r=>(State.filters.payer==="All"||r.Payer===State.filters.payer)&&(State.filters.department==="All"||r.Department===State.filters.department)&&(State.filters.month==="All"||r.Month===State.filters.month));
+}
+function metrics(data=State.filteredData){
+  const billed=sum(data,"BilledAmount"),allowed=sum(data,"AllowedAmount"),paid=sum(data,"PaidAmount"),denied=sum(data,"DenialAmount"),under=sum(data,"Underpayment"),missed=sum(data,"MissedCharge"),recovered=sum(data,"RecoveryAmount");
+  const leakage=denied+under+missed, deniedClaims=data.filter(r=>r.DenialAmount>0), appealed=deniedClaims.filter(r=>r.AppealStatus!=="Not Appealed"),successful=deniedClaims.filter(r=>r.AppealStatus==="Successful");
+  return {billed,allowed,paid,denied,under,missed,recovered,leakage,opportunity:Math.max(0,leakage-recovered),deniedCount:deniedClaims.length,denialRate:data.length?deniedClaims.length/data.length*100:0,ncr:allowed?paid/allowed*100:0,daysAR:data.length?data.reduce((a,r)=>a+r.DaysInAR,0)/data.length:0,cleanClaim:data.length?data.filter(r=>r.FirstPassAccepted).length/data.length*100:0,appealSuccess:appealed.length?successful.length/appealed.length*100:0,leakageRate:billed?leakage/billed*100:0,posRate:billed?sum(data,"POSCollected")/billed*100:0};
+}
+function group(data,key,valueFn){const o={};data.forEach(r=>{const k=r[key]||"Unknown";o[k]=(o[k]||0)+valueFn(r)});return o}
+function populateFilters(){
+  ["leakageFilters","denialFilters"].forEach(id=>{
+    const el=$("#"+id);el.innerHTML=`
+      <label>Payer<select data-filter="payer"><option>All</option>${unique(State.rawData,"Payer").map(x=>`<option>${escapeHTML(x)}</option>`).join("")}</select></label>
+      <label>Department<select data-filter="department"><option>All</option>${unique(State.rawData,"Department").map(x=>`<option>${escapeHTML(x)}</option>`).join("")}</select></label>
+      <label>Month<select data-filter="month"><option>All</option>${unique(State.rawData,"Month").map(x=>`<option>${escapeHTML(x)}</option>`).join("")}</select></label>
+      <button class="btn" data-reset>Reset Filters</button>`;
+    $$(`#${id} [data-filter]`).forEach(s=>{s.value=State.filters[s.dataset.filter];s.onchange=e=>{State.filters[e.target.dataset.filter]=e.target.value;applyFilters();syncFilters();renderAll()}});
+    $(`#${id} [data-reset]`).onclick=()=>{State.filters={payer:"All",department:"All",month:"All"};applyFilters();syncFilters();renderAll()};
+  })
+}
+function syncFilters(){$$("[data-filter]").forEach(s=>s.value=State.filters[s.dataset.filter])}
+
+function drawBar(canvas,labels,series,opts={}){
+  const c=canvas,ctx=c.getContext("2d"),dpr=devicePixelRatio||1,w=c.clientWidth||600,h=c.clientHeight||300;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const pad={l:55,r:20,t:25,b:55},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b,max=Math.max(1,...series.flatMap(s=>s.data));
+  ctx.font="12px Segoe UI";ctx.fillStyle="#64748b";ctx.strokeStyle="#dbe3ee";
+  for(let i=0;i<=4;i++){const y=pad.t+ch*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(Math.round(max*(1-i/4)).toLocaleString(),5,y+4)}
+  const groupW=cw/Math.max(1,labels.length),barW=Math.max(5,groupW/(series.length+1));
+  labels.forEach((lab,i)=>{series.forEach((s,j)=>{const val=s.data[i]||0,bh=val/max*ch,x=pad.l+i*groupW+(j+.5)*barW,y=pad.t+ch-bh;ctx.fillStyle=s.color;ctx.fillRect(x,y,barW*.82,bh)});ctx.save();ctx.translate(pad.l+i*groupW+groupW/2,h-14);ctx.rotate(-.45);ctx.fillStyle="#64748b";ctx.fillText(String(lab).slice(0,14),0,0);ctx.restore()});
+  let lx=pad.l;series.forEach(s=>{ctx.fillStyle=s.color;ctx.fillRect(lx,6,10,10);ctx.fillStyle="#334155";ctx.fillText(s.name,lx+14,15);lx+=ctx.measureText(s.name).width+40});
+}
+function drawLine(canvas,labels,series){
+  const ctx=canvas.getContext("2d"),dpr=devicePixelRatio||1,w=canvas.clientWidth||600,h=canvas.clientHeight||300;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const pad={l:55,r:20,t:25,b:45},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b,max=Math.max(1,...series.flatMap(s=>s.data));
+  ctx.font="12px Segoe UI";ctx.strokeStyle="#dbe3ee";ctx.fillStyle="#64748b";
+  for(let i=0;i<=4;i++){const y=pad.t+ch*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(Math.round(max*(1-i/4)).toLocaleString(),5,y+4)}
+  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2.5;ctx.beginPath();s.data.forEach((v,i)=>{const x=pad.l+(labels.length===1?cw/2:i*cw/(labels.length-1)),y=pad.t+ch-(v/max*ch);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
+  labels.forEach((lab,i)=>{const x=pad.l+(labels.length===1?cw/2:i*cw/(labels.length-1));ctx.fillStyle="#64748b";ctx.fillText(String(lab).slice(0,10),x-18,h-12)});
+  let lx=pad.l;series.forEach(s=>{ctx.fillStyle=s.color;ctx.fillRect(lx,6,10,10);ctx.fillStyle="#334155";ctx.fillText(s.name,lx+14,15);lx+=ctx.measureText(s.name).width+40});
+}
+function drawDonut(canvas,items){
+  const ctx=canvas.getContext("2d"),dpr=devicePixelRatio||1,w=canvas.clientWidth||500,h=canvas.clientHeight||260;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const total=items.reduce((a,x)=>a+x.value,0)||1,cx=w*.35,cy=h*.52,r=Math.min(w,h)*.3;let a=-Math.PI/2;
+  items.forEach(it=>{const end=a+it.value/total*Math.PI*2;ctx.beginPath();ctx.strokeStyle=it.color;ctx.lineWidth=28;ctx.arc(cx,cy,r,a,end);ctx.stroke();a=end});
+  ctx.fillStyle="#172033";ctx.font="bold 24px Segoe UI";ctx.textAlign="center";ctx.fillText(items.reduce((a,x)=>a+x.value,0),cx,cy+6);ctx.textAlign="left";ctx.font="12px Segoe UI";
+  items.forEach((it,i)=>{const y=45+i*28;ctx.fillStyle=it.color;ctx.fillRect(w*.68,y,11,11);ctx.fillStyle="#334155";ctx.fillText(`${it.name}: ${it.value}`,w*.68+17,y+10)});
+}
+function drawPareto(canvas,labels,values){
+  const ctx=canvas.getContext("2d"),dpr=devicePixelRatio||1,w=canvas.clientWidth||600,h=canvas.clientHeight||300;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const pad={l:45,r:45,t:25,b:70},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b,max=Math.max(1,...values),total=values.reduce((a,b)=>a+b,0)||1,barW=cw/Math.max(1,labels.length)*.62;
+  ctx.font="11px Segoe UI";ctx.strokeStyle="#dbe3ee";
+  for(let i=0;i<=4;i++){const y=pad.t+ch*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+  let cum=0;const pts=[];
+  values.forEach((v,i)=>{const x=pad.l+i*cw/labels.length+(cw/labels.length-barW)/2,bh=v/max*ch;ctx.fillStyle="#4f79c9";ctx.fillRect(x,pad.t+ch-bh,barW,bh);cum+=v;pts.push([x+barW/2,pad.t+ch-(cum/total*ch)]);ctx.save();ctx.translate(x+barW/2,h-20);ctx.rotate(-.55);ctx.fillStyle="#64748b";ctx.fillText(labels[i].slice(0,16),0,0);ctx.restore()});
+  ctx.strokeStyle="#c63b3b";ctx.lineWidth=2.5;ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke();
+  const y80=pad.t+ch*.2;ctx.setLineDash([5,5]);ctx.strokeStyle="#b7791f";ctx.beginPath();ctx.moveTo(pad.l,y80);ctx.lineTo(w-pad.r,y80);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#b7791f";ctx.fillText("80%",w-pad.r-25,y80-4);
+}
+
+function renderAll(){
+  const m=metrics();
+  $("#datasetStatus").textContent=State.rawData.length?`${State.source.name} • ${State.rawData.length.toLocaleString()} rows`:"No dataset loaded";
+  $("#rowBadge").textContent=State.rawData.length.toLocaleString();$("#heroRows").textContent=State.rawData.length.toLocaleString();$("#heroQuality").textContent=State.rawData.length?`${State.validation.score}%`:"—";$("#heroLeakage").textContent=fmtMoney(m.leakage);$("#heroDenials").textContent=fmtPct(m.denialRate);
+  $("#homeBilled").textContent=fmtMoney(m.billed);$("#homePaid").textContent=fmtMoney(m.paid);$("#homeNCR").textContent=State.rawData.length?fmtPct(m.ncr):"—";$("#homeOpportunity").textContent=fmtMoney(m.opportunity);
+  $("#leakTotal").textContent=fmtMoney(m.leakage);$("#leakRate").textContent=`${fmtPct(m.leakageRate)} of billed`;$("#leakDenied").textContent=fmtMoney(m.denied);$("#leakUnder").textContent=fmtMoney(m.under);$("#leakMissed").textContent=fmtMoney(m.missed);
+  $("#denCount").textContent=m.deniedCount.toLocaleString();$("#denRate").textContent=`${fmtPct(m.denialRate)} denial rate`;$("#denAmount").textContent=fmtMoney(m.denied);$("#denRecovered").textContent=fmtMoney(m.recovered);$("#denAppeal").textContent=State.rawData.length?fmtPct(m.appealSuccess):"—";
+  $("#dashBilled").textContent=fmtMoney(m.billed);$("#dashPaid").textContent=fmtMoney(m.paid);$("#dashLeakage").textContent=fmtMoney(m.leakage);$("#dashOpportunity").textContent=fmtMoney(m.opportunity);
+  renderCharts();renderInsights();renderLeakTable();renderDenialTable();renderKPIs();renderOpportunity();
+}
+function monthlySeries(data){
+  const months=unique(data,"Month"),out={months,billed:[],paid:[],leakage:[],denied:[],under:[],missed:[]};
+  months.forEach(m=>{const d=data.filter(r=>r.Month===m);out.billed.push(sum(d,"BilledAmount"));out.paid.push(sum(d,"PaidAmount"));out.denied.push(sum(d,"DenialAmount"));out.under.push(sum(d,"Underpayment"));out.missed.push(sum(d,"MissedCharge"));out.leakage.push(sum(d,"DenialAmount")+sum(d,"Underpayment")+sum(d,"MissedCharge"))});return out;
+}
+function renderCharts(){
+  const ms=monthlySeries(State.filteredData);
+  drawLine($("#homeTrendChart"),ms.months,[{name:"Billed",data:ms.billed,color:"#0f5bd7"},{name:"Paid",data:ms.paid,color:"#168a55"},{name:"Leakage",data:ms.leakage,color:"#c63b3b"}]);
+  drawBar($("#leakTrendChart"),ms.months,[{name:"Denials",data:ms.denied,color:"#c63b3b"},{name:"Underpayments",data:ms.under,color:"#b7791f"},{name:"Missed Charges",data:ms.missed,color:"#3267b2"}]);
+  const payer=Object.entries(group(State.filteredData,"Payer",r=>r.DenialAmount+r.Underpayment+r.MissedCharge)).sort((a,b)=>b[1]-a[1]).slice(0,8);drawBar($("#leakPayerChart"),payer.map(x=>x[0]),[{name:"Leakage",data:payer.map(x=>x[1]),color:"#0f5bd7"}]);
+  const denied=State.filteredData.filter(r=>r.DenialAmount>0),reasons=Object.entries(group(denied,"DenialReason",()=>1)).sort((a,b)=>b[1]-a[1]);drawPareto($("#paretoChart"),reasons.map(x=>x[0]),reasons.map(x=>x[1]));drawLine($("#denTrendChart"),ms.months,[{name:"Denied Amount",data:ms.denied,color:"#c63b3b"}]);
+  const kpis=computeKpis(),counts={Green:0,Amber:0,Red:0,Gray:0};kpis.forEach(k=>counts[k.status]++);drawDonut($("#kpiStatusChart"),[{name:"Green",value:counts.Green,color:"#168a55"},{name:"Amber",value:counts.Amber,color:"#b7791f"},{name:"Red",value:counts.Red,color:"#c63b3b"},{name:"Gray",value:counts.Gray,color:"#94a3b8"}]);
+  drawLine($("#dashTrendChart"),ms.months,[{name:"Billed",data:ms.billed,color:"#0f5bd7"},{name:"Paid",data:ms.paid,color:"#168a55"},{name:"Leakage",data:ms.leakage,color:"#c63b3b"}]);drawDonut($("#dashKpiChart"),[{name:"Green",value:counts.Green,color:"#168a55"},{name:"Amber",value:counts.Amber,color:"#b7791f"},{name:"Red",value:counts.Red,color:"#c63b3b"},{name:"Gray",value:counts.Gray,color:"#94a3b8"}]);
+}
+function insightData(){
+  if(!State.filteredData.length)return[];
+  const m=metrics(),payer=Object.entries(group(State.filteredData,"Payer",r=>r.DenialAmount+r.Underpayment+r.MissedCharge)).sort((a,b)=>b[1]-a[1])[0],reason=Object.entries(group(State.filteredData.filter(r=>r.DenialAmount>0),"DenialReason",r=>r.DenialAmount)).sort((a,b)=>b[1]-a[1])[0],dept=Object.entries(group(State.filteredData,"Department",r=>r.DenialAmount+r.Underpayment+r.MissedCharge)).sort((a,b)=>b[1]-a[1])[0];
+  return [
+    {title:"Largest leakage source",text:`Denials account for ${m.leakage?fmtPct(m.denied/m.leakage*100):"0%"} of total leakage (${fmtMoney(m.denied)}).`},
+    payer?{title:"Highest-risk payer",text:`${payer[0]} represents the largest leakage exposure at ${fmtMoney(payer[1])}.`}:null,
+    reason?{title:"Leading denial cause",text:`${reason[0]} is the highest denial category by amount at ${fmtMoney(reason[1])}.`}:null,
+    dept?{title:"Priority department",text:`${dept[0]} has the highest combined leakage at ${fmtMoney(dept[1])}.`}:null
+  ].filter(Boolean);
+}
+function renderInsights(){const list=insightData(),html=list.length?list.map(x=>`<div class="insight"><strong>${escapeHTML(x.title)}</strong><p>${escapeHTML(x.text)}</p></div>`).join(""):`<div class="empty">Load a dataset to generate findings.</div>`;$("#homeInsights").innerHTML=html;$("#dashInsights").innerHTML=html}
+function table(el,data,cols,limit=100){const t=$(el),head=t.querySelector("thead"),body=t.querySelector("tbody");head.innerHTML=`<tr>${cols.map(c=>`<th>${escapeHTML(c)}</th>`).join("")}</tr>`;body.innerHTML=data.slice(0,limit).map(r=>`<tr>${cols.map(c=>`<td>${moneyFields.includes(c)?fmtMoney(r[c]):escapeHTML(r[c])}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${cols.length}">No matching records.</td></tr>`}
+function renderLeakTable(){table("#leakTable",State.filteredData.filter(r=>r.DenialAmount+r.Underpayment+r.MissedCharge>0),["RecordID","Month","Payer","Department","BilledAmount","DenialAmount","Underpayment","MissedCharge"],150)}
+function renderDenialTable(){table("#denialTable",State.filteredData.filter(r=>r.DenialAmount>0),["RecordID","Month","Payer","Department","DenialReason","DenialAmount","AppealStatus","RecoveryAmount"],150)}
+function computeKpis(){
+  const m=metrics();if(!State.filteredData.length)return[
+    {key:"ncr",name:"Net Collection Rate",value:null,target:State.thresholds.ncr,unit:"%",direction:"high",definition:"Paid amount divided by allowed amount."},
+    {key:"denialRate",name:"Denial Rate",value:null,target:State.thresholds.denialRate,unit:"%",direction:"low",definition:"Denied claims divided by total claims."},
+    {key:"daysAR",name:"Average Days in AR",value:null,target:State.thresholds.daysAR,unit:" days",direction:"low",definition:"Average age of accounts receivable."},
+    {key:"cleanClaim",name:"Clean Claim Rate",value:null,target:State.thresholds.cleanClaim,unit:"%",direction:"high",definition:"Claims accepted on first submission."},
+    {key:"appealSuccess",name:"Appeal Success Rate",value:null,target:State.thresholds.appealSuccess,unit:"%",direction:"high",definition:"Successful appeals divided by appealed denials."},
+    {key:"leakageRate",name:"Leakage Rate",value:null,target:State.thresholds.leakageRate,unit:"%",direction:"low",definition:"Total leakage divided by billed amount."}
+  ].map(k=>({...k,status:"Gray"}));
+  const arr=[
+    {key:"ncr",name:"Net Collection Rate",value:m.ncr,target:State.thresholds.ncr,unit:"%",direction:"high",definition:"Paid amount divided by allowed amount."},
+    {key:"denialRate",name:"Denial Rate",value:m.denialRate,target:State.thresholds.denialRate,unit:"%",direction:"low",definition:"Denied claims divided by total claims."},
+    {key:"daysAR",name:"Average Days in AR",value:m.daysAR,target:State.thresholds.daysAR,unit:" days",direction:"low",definition:"Average age of accounts receivable."},
+    {key:"cleanClaim",name:"Clean Claim Rate",value:m.cleanClaim,target:State.thresholds.cleanClaim,unit:"%",direction:"high",definition:"Claims accepted on first submission."},
+    {key:"appealSuccess",name:"Appeal Success Rate",value:m.appealSuccess,target:State.thresholds.appealSuccess,unit:"%",direction:"high",definition:"Successful appeals divided by appealed denials."},
+    {key:"leakageRate",name:"Leakage Rate",value:m.leakageRate,target:State.thresholds.leakageRate,unit:"%",direction:"low",definition:"Total leakage divided by billed amount."}
+  ];
+  return arr.map(k=>{const ratio=k.direction==="high"?k.value/k.target:k.target/Math.max(k.value,.0001);const status=ratio>=1?"Green":ratio>=.85?"Amber":"Red";return {...k,status}})
+}
+function renderKPIs(){
+  const k=computeKpis();$("#kpiRows").innerHTML=k.map(x=>`<div class="kpi-row"><div><strong>${escapeHTML(x.name)}</strong><div style="color:var(--muted);font-size:12px">${escapeHTML(x.definition)}</div></div><div>${x.value==null?"—":x.value.toFixed(State.settings.precision)+x.unit}</div><div>${x.target}${x.unit}</div><div><span class="status-pill ${x.status.toLowerCase()}">${x.status}</span></div><div>${x.value==null?"—":(x.value-x.target).toFixed(State.settings.precision)+x.unit}</div></div>`).join("");
+  $("#kpiDefinitions").innerHTML=k.map(x=>`<div class="insight"><strong>${escapeHTML(x.name)}</strong><p>${escapeHTML(x.definition)} Target: ${x.target}${x.unit}.</p></div>`).join("")
+}
+function renderOpportunity(){
+  if(!State.filteredData.length){$("#opportunityList").innerHTML=`<div class="empty">Load data to rank opportunities.</div>`;return}
+  const items=[
+    ["Denied Revenue",sum(State.filteredData,"DenialAmount")-sum(State.filteredData,"RecoveryAmount")],
+    ["Underpayments",sum(State.filteredData,"Underpayment")],
+    ["Missed Charges",sum(State.filteredData,"MissedCharge")]
+  ].sort((a,b)=>b[1]-a[1]);$("#opportunityList").innerHTML=items.map((x,i)=>`<div class="insight"><strong>${i+1}. ${x[0]}</strong><p>${fmtMoney(x[1])} estimated review opportunity.</p></div>`).join("")
+}
+function renderDataWorkspace(){
+  $("#profileRows").textContent=State.rawData.length.toLocaleString();$("#profileCols").textContent=State.rawData[0]?Object.keys(State.rawData[0]).length:0;$("#profileQuality").textContent=State.rawData.length?`${State.validation.score}%`:"—";$("#profileCritical").textContent=State.validation.critical.length;
+  $("#validationList").innerHTML=[...State.validation.critical.map(x=>`<div class="alert error">${escapeHTML(x)}</div>`),...State.validation.warnings.map(x=>`<div class="alert" style="background:#fff8e7;color:#7d5b1e">${escapeHTML(x)}</div>`),...State.validation.info.map(x=>`<div class="alert success">${escapeHTML(x)}</div>`)].join("");
+  $("#previewInfo").textContent=State.rawData.length?`Showing up to 100 of ${State.rawData.length.toLocaleString()} records`:"No data loaded";renderPreview()
+}
+function renderPreview(){
+  const q=$("#previewSearch").value.toLowerCase(),data=q?State.rawData.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))):State.rawData;
+  const cols=State.rawData[0]?Object.keys(State.rawData[0]).slice(0,12):["RecordID","Month","Payer","Department"];table("#previewTable",data,cols,100)
+}
+$("#previewSearch").oninput=renderPreview;
+
+function csvEscape(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+function download(name,text,type="text/csv"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function exportRows(name,data,cols){if(!data.length)return toast("No data available to export.");download(name,[cols.join(","),...data.map(r=>cols.map(c=>csvEscape(r[c])).join(","))].join("\n"))}
+$("#exportLeakageBtn").onclick=()=>exportRows("rcm_leakage.csv",State.filteredData.filter(r=>r.DenialAmount+r.Underpayment+r.MissedCharge>0),["RecordID","Month","Payer","Department","BilledAmount","DenialAmount","Underpayment","MissedCharge","RecoveryAmount"]);
+$("#exportDenialsBtn").onclick=()=>exportRows("rcm_denials.csv",State.filteredData.filter(r=>r.DenialAmount>0),["RecordID","Month","Payer","Department","DenialReason","DenialAmount","AppealStatus","RecoveryAmount"]);
+$("#downloadTemplateBtn").onclick=()=>download("rcm_template.csv",required.join(",")+"\n");
+$("#clearDataBtn").onclick=()=>{State.rawData=[];State.filteredData=[];State.source={name:"",loadedAt:"",rowCount:0};State.validation={score:0,critical:[],warnings:[],info:[]};renderAll();renderDataWorkspace();populateFilters();toast("Dataset cleared")};
+
+function report(type){
+  if(!State.rawData.length)return toast("Load data before generating a report.");
+  const m=metrics(),ins=insightData(),title=type==="executive"?"Executive Summary":type==="leakage"?"Revenue Leakage Report":"Denial Intelligence Report";
+  State.reportHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial;padding:36px;color:#172033}h1{color:#0f5bd7}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{border:1px solid #ddd;padding:14px;border-radius:10px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><h1>${title}</h1><p>Generated ${new Date().toLocaleString()} from ${escapeHTML(State.source.name)}</p><div class="grid"><div class="card"><b>Total Billed</b><br>${fmtMoney(m.billed)}</div><div class="card"><b>Total Paid</b><br>${fmtMoney(m.paid)}</div><div class="card"><b>Total Leakage</b><br>${fmtMoney(m.leakage)}</div><div class="card"><b>Denial Rate</b><br>${fmtPct(m.denialRate)}</div></div><h2>Key Findings</h2>${ins.map(x=>`<p><b>${escapeHTML(x.title)}:</b> ${escapeHTML(x.text)}</p>`).join("")}<h2>Methodology</h2><p>All results are deterministic descriptive calculations performed locally in the browser.</p></body></html>`;
+  $("#reportPreview").innerHTML=`<iframe title="Report preview" style="width:100%;height:520px;border:1px solid var(--line);border-radius:12px" srcdoc="${State.reportHTML.replace(/"/g,"&quot;")}"></iframe>`;$("#reportMeta").textContent=`${title} • ${new Date().toLocaleString()}`;$("#downloadReportBtn").disabled=false;toast("Report generated")
+}
+$$(".report-btn").forEach(b=>b.onclick=()=>report(b.dataset.report));$("#downloadReportBtn").onclick=()=>download("rcm_report.html",State.reportHTML,"text/html");$("#exportDashboardBtn").onclick=()=>{report("executive");download("rcm_executive_report.html",State.reportHTML,"text/html")};$("#printDashboardBtn").onclick=()=>window.print();
+
+function thresholdForm(){
+  const map={ncr:"Net Collection Rate (%)",denialRate:"Denial Rate (%)",daysAR:"Average Days in AR",cleanClaim:"Clean Claim Rate (%)",appealSuccess:"Appeal Success Rate (%)",leakageRate:"Leakage Rate (%)"};
+  $("#thresholdForm").innerHTML=Object.entries(map).map(([k,l])=>`<label style="display:grid;grid-template-columns:1fr 120px;gap:10px;align-items:center;margin:10px 0">${l}<input data-threshold="${k}" type="number" step="0.1" value="${State.thresholds[k]}" style="padding:9px;border:1px solid var(--line);border-radius:9px"></label>`).join("")
+}
+$("#editThresholdsBtn").onclick=()=>{thresholdForm();$("#thresholdModal").classList.remove("hidden")};$("#saveThresholdsBtn").onclick=()=>{$$("[data-threshold]").forEach(i=>State.thresholds[i.dataset.threshold]=Number(i.value));$("#thresholdModal").classList.add("hidden");renderAll();toast("Thresholds updated")};$("#resetThresholdsBtn").onclick=()=>{State.thresholds={ncr:95,denialRate:5,daysAR:40,cleanClaim:95,appealSuccess:65,leakageRate:3};thresholdForm()};
+$$("[data-close]").forEach(b=>b.onclick=()=>$("#"+b.dataset.close).classList.add("hidden"));
+
+function saveSession(){localStorage.setItem("rcmStudioSession",JSON.stringify({source:State.source,rawData:State.rawData,settings:State.settings,thresholds:State.thresholds}))}
+$("#saveSessionBtn").onclick=()=>{if(!State.rawData.length)return toast("No dataset to save.");saveSession();toast("Session saved locally")};
+$("#restoreSessionBtn").onclick=()=>{const s=localStorage.getItem("rcmStudioSession");if(!s)return toast("No saved session found.");const o=JSON.parse(s);State.settings=o.settings||State.settings;State.thresholds=o.thresholds||State.thresholds;loadData(o.rawData,o.source?.name||"Saved Session");toast("Session restored")};
+$("#deleteSessionBtn").onclick=()=>{localStorage.removeItem("rcmStudioSession");toast("Saved session deleted")};
+$("#saveSettingsBtn").onclick=()=>{State.settings.currency=$("#currencySetting").value;State.settings.precision=Number($("#precisionSetting").value);State.settings.saveSession=$("#saveSessionSetting").checked;localStorage.setItem("rcmStudioSettings",JSON.stringify(State.settings));renderAll();toast("Settings saved")};
+
+$("#selectFileBtn").onclick=()=>$("#fileInput").click();$("#uploadTopBtn").onclick=()=>$("#fileInputTop").click();$("#heroUploadBtn").onclick=()=>$("#fileInputTop").click();$("#fileInput").onchange=e=>loadFile(e.target.files[0]);$("#fileInputTop").onchange=e=>loadFile(e.target.files[0]);
+$("#sampleTopBtn").onclick=()=>loadData(generateSample(500),"Synthetic_RCM_500.csv");$("#heroSampleBtn").onclick=()=>loadData(generateSample(500),"Synthetic_RCM_500.csv");$("#load500Btn").onclick=()=>loadData(generateSample(500),"Synthetic_RCM_500.csv");$("#load1000Btn").onclick=()=>loadData(generateSample(1000),"Synthetic_RCM_1000.csv");
+$("#pasteDataBtn").onclick=()=>$("#pasteModal").classList.remove("hidden");$("#processPasteBtn").onclick=()=>{try{loadData(parseDelimited($("#pasteArea").value),"Pasted Data");$("#pasteModal").classList.add("hidden")}catch(e){toast(e.message)}};
+const dz=$("#dropzone");["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag")}));["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag")}));dz.addEventListener("drop",e=>loadFile(e.dataTransfer.files[0]));
+
+
+function setInputSource(source){
+  const labels={local:"Local File",sample:"Synthetic Sample",api:"API Portal",mcp:"MCP Portal"};
+  $$("[data-source-tab]").forEach(b=>b.classList.toggle("active",b.dataset.sourceTab===source));
+  $$("[data-source-panel]").forEach(p=>p.classList.toggle("active",p.dataset.sourcePanel===source));
+  $("#activeSourceBadge").textContent=labels[source]||"Input";
+}
+$$("[data-source-tab]").forEach(b=>b.addEventListener("click",()=>setInputSource(b.dataset.sourceTab)));
+$("#sourceSample500").onclick=()=>loadData(generateSample(500),"Embedded_Synthetic_RCM_500.csv");
+$("#sourceSample1000").onclick=()=>loadData(generateSample(1000),"Embedded_Synthetic_RCM_1000.csv");
+$("#sourceSample5000").onclick=()=>loadData(generateSample(5000),"Embedded_Synthetic_RCM_5000.csv");
+function setConnectorStatus(id,message,type="") {const el=$(id);el.className=`connection-status ${type}`.trim();el.innerHTML=`<span class="status-dot"></span>${escapeHTML(message)}`}
+function validHttpUrl(value){try{const u=new URL(value);return ["http:","https:"].includes(u.protocol)}catch{return false}}
+$("#testApiBtn").onclick=()=>{const url=$("#apiBaseUrl").value.trim(),path=$("#apiResourcePath").value.trim();if(!validHttpUrl(url))return setConnectorStatus("#apiStatus","Enter a valid HTTP or HTTPS API base URL.","error");if(path&&!path.startsWith("/"))return setConnectorStatus("#apiStatus","Resource path should begin with a forward slash.","error");setConnectorStatus("#apiStatus","Configuration is valid. Live network calls remain disabled in this standalone edition.","success")};
+$("#saveApiBtn").onclick=()=>{const config={baseUrl:$("#apiBaseUrl").value.trim(),auth:$("#apiAuthMethod").value,path:$("#apiResourcePath").value.trim()};localStorage.setItem("rcmApiConfig",JSON.stringify(config));setConnectorStatus("#apiStatus","API configuration saved locally. Credentials were not stored.","success");toast("API configuration saved")};
+$("#resetApiBtn").onclick=()=>{$("#apiBaseUrl").value="";$("#apiResourcePath").value="";$("#apiCredential").value="";$("#apiAuthMethod").value="none";localStorage.removeItem("rcmApiConfig");setConnectorStatus("#apiStatus","Not configured.")};
+$("#testMcpBtn").onclick=()=>{const endpoint=$("#mcpEndpoint").value.trim(),workspace=$("#mcpWorkspace").value.trim();if(!endpoint)return setConnectorStatus("#mcpStatus","Enter an MCP server URL or local gateway address.","error");if(!workspace)return setConnectorStatus("#mcpStatus","Enter a workspace name.","error");setConnectorStatus("#mcpStatus","Configuration is valid. No MCP session was opened.","success")};
+$("#saveMcpBtn").onclick=()=>{const config={endpoint:$("#mcpEndpoint").value.trim(),transport:$("#mcpTransport").value,workspace:$("#mcpWorkspace").value.trim()};localStorage.setItem("rcmMcpConfig",JSON.stringify(config));setConnectorStatus("#mcpStatus","MCP configuration saved locally. Access token was not stored.","success");toast("MCP configuration saved")};
+$("#resetMcpBtn").onclick=()=>{$("#mcpEndpoint").value="";$("#mcpWorkspace").value="";$("#mcpToken").value="";$("#mcpTransport").value="streamable-http";localStorage.removeItem("rcmMcpConfig");setConnectorStatus("#mcpStatus","Not configured.")};
+const savedApi=localStorage.getItem("rcmApiConfig");if(savedApi){try{const c=JSON.parse(savedApi);$("#apiBaseUrl").value=c.baseUrl||"";$("#apiAuthMethod").value=c.auth||"none";$("#apiResourcePath").value=c.path||"";setConnectorStatus("#apiStatus","Saved API configuration loaded.","success")}catch{}}
+const savedMcp=localStorage.getItem("rcmMcpConfig");if(savedMcp){try{const c=JSON.parse(savedMcp);$("#mcpEndpoint").value=c.endpoint||"";$("#mcpTransport").value=c.transport||"streamable-http";$("#mcpWorkspace").value=c.workspace||"";setConnectorStatus("#mcpStatus","Saved MCP configuration loaded.","success")}catch{}}
+
+window.addEventListener("resize",()=>{clearTimeout(window.__rt);window.__rt=setTimeout(renderCharts,120)});
+const settings=localStorage.getItem("rcmStudioSettings");if(settings){Object.assign(State.settings,JSON.parse(settings));$("#currencySetting").value=State.settings.currency;$("#precisionSetting").value=State.settings.precision;$("#saveSessionSetting").checked=State.settings.saveSession}
+if(!localStorage.getItem("rcmStudioFirstRun")){
+  loadData(generateSample(500),"Embedded_Synthetic_RCM_500.csv");
+  localStorage.setItem("rcmStudioFirstRun","1");
+}
+populateFilters();renderAll();renderDataWorkspace();
+})();
+</script>
+</body>
+</html>
